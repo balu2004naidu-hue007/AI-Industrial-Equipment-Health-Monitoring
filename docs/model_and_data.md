@@ -12,7 +12,7 @@ The binary training target is `failure`: 0 for the generated normal group and 1 
 
 ## Baseline result observed during this rebuild
 
-Using the supplied 5,000-row generated dataset and the repository training script in the current test environment (scikit-learn 1.8.0), one seeded 80/20 stratified split produced 99.0% accuracy, 98.6% balanced accuracy, and 0.984 macro-F1. The confusion matrix (true rows, predicted columns; labels 0 then 1) was `[[196, 4], [6, 794]]`. This is a reproducibility check on synthetic data generated from five predefined distributions. It is not a field-test result and must not be used as a claim of 99% accuracy on real industrial equipment.
+Using `generate_training_data.py --seed 42` to create the 5,000-row synthetic dataset, the repository training script in the current test environment (NumPy 2.3.5, scikit-learn 1.8.0) produced 99.1% accuracy, 98.9% balanced accuracy, and 0.986 macro-F1 on one seeded 80/20 stratified split. The confusion matrix (true rows, predicted columns; labels 0 then 1) was `[[197, 3], [6, 794]]`. This is a reproducibility check on synthetic data generated from five predefined distributions. It is not a field-test result and must not be used as a claim of 99% accuracy on real industrial equipment.
 
 ## Anomaly baseline
 
