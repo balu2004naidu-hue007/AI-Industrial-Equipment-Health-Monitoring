@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Virtual environments and local tooling
+.venv/
+venv/
+env/
+.idea/
+.vscode/
+
+# Generated model binaries (rebuild with the training scripts)
+models/*.joblib
+models/*.pkl
+
+# Generated runtime data and reports
+data/live_machine_data.csv
+data/prediction_results.csv
+data/ai_results.json
+data/ai_analysis_results.csv
+data/live_ai_results.json
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
