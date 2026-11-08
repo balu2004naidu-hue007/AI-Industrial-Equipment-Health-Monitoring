@@ -15,6 +15,7 @@ env/
 # Generated model binaries (rebuild with the training scripts)
 models/*.joblib
 models/*.pkl
+models/*metadata.json
 
 # Generated runtime data and reports
 data/live_machine_data.csv
