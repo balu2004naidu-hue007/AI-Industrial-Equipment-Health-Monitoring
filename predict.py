@@ -1,51 +1,52 @@
-import pandas as pd
-import joblib
+#!/usr/bin/env python3
+"""Analyse the latest valid reading and append a consistent prediction record."""
+from __future__ import annotations
+
+import argparse
 import csv
-from datetime import datetime
-import time
+import json
+from pathlib import Path
+import sys
 
-# Load trained model
-model = joblib.load("models/model.pkl")
+ROOT = Path(__file__).resolve().parent
+sys.path.insert(0, str(ROOT / "src"))
+from industrial_monitoring.core import analyze_reading, load_models, read_machine_rows
 
-print("AI Prediction Started...\n")
+RESULT_FIELDS = ["timestamp", "machine_mode", "risk_score", "health_score", "status", "anomaly_status", "diagnosis", "model_failure_probability", "rul_proxy_hours", "recommendation"]
 
-while True:
-    # Read latest machine data
-    df = pd.read_csv("dataset/machine_log.csv")
 
-    latest = df.iloc[-1]
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--data", type=Path, default=ROOT / "data" / "live_machine_data.csv")
+    parser.add_argument("--models-dir", type=Path, default=ROOT / "models")
+    parser.add_argument("--output", type=Path, default=ROOT / "data" / "prediction_results.csv")
+    args = parser.parse_args()
+    try:
+        rows, warnings = read_machine_rows(args.data, limit=1)
+    except Exception as exc:
+        print(f"ERROR reading input data: {exc}", file=sys.stderr)
+        return 1
+    if not rows:
+        print("No valid machine reading is available. Run the simulator or serial logger first.", file=sys.stderr)
+        return 1
+    latest = rows[-1]
+    models = load_models(args.models_dir)
+    result = analyze_reading(latest, models)
+    record = {**latest, **result}
+    args.output.parent.mkdir(parents=True, exist_ok=True)
+    write_header = not args.output.exists() or args.output.stat().st_size == 0
+    with args.output.open("a", newline="", encoding="utf-8") as handle:
+        writer = csv.DictWriter(handle, fieldnames=RESULT_FIELDS, extrasaction="ignore")
+        if write_header:
+            writer.writeheader()
+        writer.writerow(record)
+    print(json.dumps(record, indent=2, allow_nan=False))
+    if warnings or models.warnings:
+        for warning in [*warnings, *models.warnings]:
+            print(f"WARNING: {warning}", file=sys.stderr)
+    print(f"Saved consistent prediction record to: {args.output}")
+    return 0
 
-    temp = int(latest["Temperature"])
-    vib = int(latest["Vibration"])
-    rpm = int(latest["RPM"])
 
-    # AI Prediction
-    prediction = model.predict([[temp, vib, rpm]])
-
-    if prediction[0] == 0:
-        status = "Machine Healthy"
-    else:
-        status = "Maintenance Required"
-
-    print("--------------------------------")
-    print(f"Temperature : {temp} °C")
-    print(f"Vibration   : {vib}")
-    print(f"RPM         : {rpm}")
-    print(f"Status      : {status}")
-
-    # Save prediction history
-    with open("dataset/prediction_history.csv", "a", newline="") as file:
-        writer = csv.writer(file)
-
-        if file.tell() == 0:
-            writer.writerow(["Time", "Temperature", "Vibration", "RPM", "Prediction"])
-
-        writer.writerow([
-            datetime.now(),
-            temp,
-            vib,
-            rpm,
-            status
-        ])
-
-    time.sleep(2)
+if __name__ == "__main__":
+    raise SystemExit(main())
